@@ -1,31 +1,16 @@
+const each_async = require('async/eachSeries');
 const fs = require('fs');
 const http = require('http');
 const jquery = require('jquery');
 const jsdom = require('jsdom');
 const once = require('lodash.once');
+const noop = require('lodash.noop');
 const path = require('path');
+const ProgressBar = require('progress');
 const stream_buffers = require('stream-buffers');
-const each_async = require('async/eachSeries');
 
-function exist(v) {
+function existy(v) {
 	return v != null;
-}
-
-function nodify(resolve, reject) {
-	return (err, ...rest) => {
-		console.log(`err: ${err}`);
-		if (exist(err)) {
-			reject(err);
-		} else {
-			resolve(...rest);
-		}
-	};
-}
-
-function promisify(fn) {
-	return (...args) => new Promise((resolve, reject) => {
-		fn(...args, nodify(resolve, reject));
-	});
 }
 
 function get_async(options) {
@@ -33,7 +18,7 @@ function get_async(options) {
 		const req = http.get(options);
 		req
 			.on('error', once(reject))
-			.on('response', once(resolve));
+			.on('response', once(res => resolve(res, req)));
 	});
 }
 
@@ -52,7 +37,7 @@ function response_to_html(res) {
 function html_to_dom(html) {
 	return new Promise((resolve, reject) => {
 		jsdom.env(html, (err, window) => {
-			if (err) {
+			if (existy(err)) {
 				reject(err);
 			} else {
 				jquery(window);
@@ -62,19 +47,36 @@ function html_to_dom(html) {
 	});
 }
 
-function download(base_url, prefix) {
+function make_progress_bar(enabled, total) {
+	if (enabled) {
+		const progress = new ProgressBar('[:bar] :percent :etas', {
+			clear: true,
+			complete: '=',
+			incomplete: ' ',
+			width: '80',
+			total
+		});
+		return count => progress.tick(existy(count) ? count : 1);
+	}
+	return noop;
+}
+
+function download(base_url, prefix, show_progress = false) {
 	return get_async(`${base_url}/${prefix}`)
-		.then(res => {
+		.then((res, req) => {
+			const total_len = parseInt(res.headers['content-length'], 10);
+			const progress_enabled = show_progress && !Number.isNaN(total_len);
+			const progress = make_progress_bar(progress_enabled, total_len);
 			return new Promise((resolve, reject) => {
 				const filename = path.basename(prefix);
 				res
+					.on('data', (chunk) => progress(chunk.length))
 					.pipe(fs.createWriteStream(filename))
 					.on('error', reject)
 					.on('finish', resolve);
 			});
 		});
 }
-
 
 const base_url = process.argv[2];
 
@@ -95,7 +97,7 @@ get_async(base_url)
 			links,
 			(link, next) => {
 				console.log(`-- downloading ${link}`);
-				download(base_url, link)
+				download(base_url, link, true)
 					.then(() => {
 						console.log('-- done');
 						next();

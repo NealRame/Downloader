@@ -12,7 +12,9 @@
     "async": "^2.0.1",
     "jquery": "^3.1.1",
     "jsdom": "^9.6.0",
+    "lodash.noop": "^3.0.1",
     "lodash.once": "^4.1.1",
+    "progress": "^1.1.8",
     "stream-buffers": "^3.0.1"
   }
 }

@@ -60,7 +60,7 @@ function make_progress_bar(enabled, total) {
 
 function download(base_url, prefix, show_progress = false) {
 	return get_async(`${base_url}/${prefix}`)
-		.then((res, req) => {
+		.then((res) => {
 			const total_len = parseInt(res.headers['content-length'], 10);
 			const progress_enabled = show_progress && !Number.isNaN(total_len);
 			const progress = make_progress_bar(progress_enabled, total_len);

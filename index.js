@@ -1,4 +1,3 @@
-const each_async = require('async/eachSeries');
 const fs = require('fs');
 const http = require('http');
 const is_nil = require('lodash.isnil');
@@ -7,6 +6,7 @@ const jsdom = require('jsdom');
 const once = require('lodash.once');
 const path = require('path');
 
+const common = require('./common');
 const ui = require('./ui');
 
 const stream_buffers = require('stream-buffers');
@@ -77,20 +77,12 @@ get_async(base_url)
 			.toArray()
 	})
 	.then((links) => {
-		each_async(
+		return common.eachSeries(
 			links,
-			(link, next) => {
+			(link) => {
 				console.log(`-- downloading ${link}`);
-				download(base_url, link, true)
-					.then(() => {
-						console.log('-- done');
-						next();
-					})
-					.catch(next);
-			},
-			(err) => {
-				console.error(err);
+				return download(base_url, link, true);
 			}
-		)
+		);
 	})
 	.catch(err => console.error(err));

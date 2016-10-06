@@ -4,10 +4,11 @@ const http = require('http');
 const is_nil = require('lodash.isnil');
 const jquery = require('jquery');
 const jsdom = require('jsdom');
-const noop = require('lodash.noop');
 const once = require('lodash.once');
 const path = require('path');
-const ProgressBar = require('progress');
+
+const ui = require('./ui');
+
 const stream_buffers = require('stream-buffers');
 
 function get_async(options) {
@@ -44,26 +45,12 @@ function html_to_dom(html) {
 	});
 }
 
-function make_progress_bar(enabled, total) {
-	if (enabled) {
-		const progress = new ProgressBar('[:bar] :percent :etas', {
-			clear: true,
-			complete: '=',
-			incomplete: ' ',
-			width: '80',
-			total
-		});
-		return count => progress.tick(is_nil(count) ? 1 : count);
-	}
-	return noop;
-}
-
 function download(base_url, prefix, show_progress = false) {
 	return get_async(`${base_url}/${prefix}`)
 		.then((res) => {
 			const total_len = parseInt(res.headers['content-length'], 10);
 			const progress_enabled = show_progress && !Number.isNaN(total_len);
-			const progress = make_progress_bar(progress_enabled, total_len);
+			const progress = ui.makeProgressBar(progress_enabled, total_len);
 			return new Promise((resolve, reject) => {
 				const filename = path.basename(prefix);
 				res

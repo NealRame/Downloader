@@ -1,17 +1,14 @@
 const each_async = require('async/eachSeries');
 const fs = require('fs');
 const http = require('http');
+const is_nil = require('lodash.isnil');
 const jquery = require('jquery');
 const jsdom = require('jsdom');
-const once = require('lodash.once');
 const noop = require('lodash.noop');
+const once = require('lodash.once');
 const path = require('path');
 const ProgressBar = require('progress');
 const stream_buffers = require('stream-buffers');
-
-function existy(v) {
-	return v != null;
-}
 
 function get_async(options) {
 	return new Promise((resolve, reject) => {
@@ -37,11 +34,11 @@ function response_to_html(res) {
 function html_to_dom(html) {
 	return new Promise((resolve, reject) => {
 		jsdom.env(html, (err, window) => {
-			if (existy(err)) {
-				reject(err);
-			} else {
+			if (is_nil(err)) {
 				jquery(window);
 				resolve(window);
+			} else {
+				reject(err);
 			}
 		});
 	});
@@ -56,7 +53,7 @@ function make_progress_bar(enabled, total) {
 			width: '80',
 			total
 		});
-		return count => progress.tick(existy(count) ? count : 1);
+		return count => progress.tick(is_nil(count) ? 1 : count);
 	}
 	return noop;
 }
